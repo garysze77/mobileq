@@ -219,6 +219,9 @@ export default function Home() {
   };
 
   // Admin functions
+  const [adminPhoneNumber, setAdminPhoneNumber] = useState("");
+  const [adminHexagram, setAdminHexagram] = useState(null);
+
   const loadAdminStats = async () => {
     try {
       const res = await fetch(`${API_URL}/admin/stats`);
@@ -271,6 +274,23 @@ export default function Home() {
     }
   };
 
+  const handleAdminAnalyzePhone = async () => {
+    if (!adminPhoneNumber) return;
+    try {
+      const digits = adminPhoneNumber.replace(/\D/g, "").split("").map(Number);
+      const first4 = digits.slice(0, 4).reduce((a, b) => a + b, 0);
+      const last4 = digits.slice(4, 8).reduce((a, b) => a + b, 0);
+      const upper = first4 % 8 || 8;
+      const lower = last4 % 8 || 8;
+      
+      const res = await fetch(`${API_URL}/hexagram/${upper}/${lower}`);
+      const data = await res.json();
+      setAdminHexagram(data);
+    } catch (err) {
+      alert("分析失敗");
+    }
+  };
+
   // Auto load admin data
   useEffect(() => {
     if (isAdmin && view === "admin") {
@@ -319,6 +339,32 @@ export default function Home() {
               <div className="text-3xl font-bold">{adminStats?.total_hexagrams || "-"}</div>
               <div>卦象</div>
             </div>
+          </div>
+          
+          {/* Admin Phone Analysis */}
+          <div className="bg-white p-6 rounded-lg mb-8">
+            <h2 className="text-2xl font-bold mb-4">電話號碼分析</h2>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="輸入電話號碼 (8位數字)"
+                value={adminPhoneNumber}
+                onChange={(e) => setAdminPhoneNumber(e.target.value)}
+                className="flex-1 p-3 border rounded-lg"
+              />
+              <button
+                onClick={handleAdminAnalyzePhone}
+                className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+              >
+                分析
+              </button>
+            </div>
+            {adminHexagram && (
+              <div className="mt-4 bg-yellow-50 p-4 rounded-lg">
+              <p className="text-2xl font-bold">{adminHexagram.upper_trigram.name}{adminHexagram.lower_trigram.name}</p>
+              <p className="text-lg">{adminHexagram.hexagram_name}</p>
+              </div>
+            )}
           </div>
           
           {/* Admin Reset Password */}
