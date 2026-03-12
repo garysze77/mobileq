@@ -151,8 +151,8 @@ export default function Home() {
       
       const res = await fetch(`${API_URL}/hexagram/${upper}/${lower}`);
       const data = await res.json();
-      set    } catch (Hexagram(data);
-err) {
+      setHexagram(data);
+    } catch (err) {
       setError("Analysis failed.");
     }
     
