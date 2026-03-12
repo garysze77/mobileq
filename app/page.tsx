@@ -415,9 +415,24 @@ export default function Home() {
             </div>
             {adminHexagram && (
               <div className="mt-4 bg-yellow-50 p-4 rounded-lg">
-              <p className="text-2xl font-bold">{adminHexagram.upper_trigram.name}{adminHexagram.lower_trigram.name}</p>
-              <p className="text-lg">{adminHexagram.hexagram_name}</p>
-              <p className="text-sm mt-2">生命密碼: {adminHexagram.life_path} - {adminHexagram.life_path_meaning}</p>
+              <p className="text-3xl font-bold">{adminHexagram.upper_trigram.name}{adminHexagram.lower_trigram.name}</p>
+              <p className="text-xl font-semibold">{adminHexagram.hexagram_name}</p>
+              <p className="mt-2 text-gray-700">{adminHexagram.meaning}</p>
+              
+              <div className="mt-4 p-3 bg-white rounded">
+                <p className="font-bold">上卦 ({adminHexagram.upper_trigram.name}):</p>
+                <p>{adminHexagram.upper_trigram.meaning}</p>
+              </div>
+              
+              <div className="mt-2 p-3 bg-white rounded">
+                <p className="font-bold">下卦 ({adminHexagram.lower_trigram.name}):</p>
+                <p>{adminHexagram.lower_trigram.meaning}</p>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-100 rounded">
+                <p className="font-bold">生命密碼: {adminHexagram.life_path}</p>
+                <p>{adminHexagram.life_path_meaning}</p>
+              </div>
               </div>
             )}
           </div>
