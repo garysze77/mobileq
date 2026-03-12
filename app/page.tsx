@@ -50,7 +50,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [hexagram, setHexagram] = useState<Hexagram | null>(null);
+  const [hexagram, setHexagram] = useState<any>(null);
   const [goalNumber, setGoalNumber] = useState(5);
   const [recommendation, setRecommendation] = useState("");
   const [loading, setLoading] = useState(false);
@@ -220,7 +220,7 @@ export default function Home() {
 
   // Admin functions
   const [adminPhoneNumber, setAdminPhoneNumber] = useState("");
-  const [adminHexagram, setAdminHexagram] = useState(null);
+  const [adminHexagram, setAdminHexagram] = useState<any>(null);
 
   const loadAdminStats = async () => {
     try {
