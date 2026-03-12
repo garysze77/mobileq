@@ -220,6 +220,9 @@ export default function Home() {
 
   // Admin functions
   const [adminPhoneNumber, setAdminPhoneNumber] = useState("");
+  const [adminBirthYear, setAdminBirthYear] = useState(1990);
+  const [adminBirthMonth, setAdminBirthMonth] = useState(1);
+  const [adminBirthDay, setAdminBirthDay] = useState(1);
   const [adminHexagram, setAdminHexagram] = useState<any>(null);
 
   const loadAdminStats = async () => {
@@ -277,14 +280,37 @@ export default function Home() {
   const handleAdminAnalyzePhone = async () => {
     if (!adminPhoneNumber) return;
     try {
+      // Calculate hexagram
       const digits = adminPhoneNumber.replace(/\D/g, "").split("").map(Number);
       const first4 = digits.slice(0, 4).reduce((a, b) => a + b, 0);
       const last4 = digits.slice(4, 8).reduce((a, b) => a + b, 0);
       const upper = first4 % 8 || 8;
       const lower = last4 % 8 || 8;
       
+      // Calculate life path
+      const total = adminBirthYear + adminBirthMonth + adminBirthDay;
+      let lifePath = total;
+      while (lifePath >= 10) {
+        lifePath = parseInt(lifePath.toString().split('').reduce((a, b) => a + parseInt(b), 0).toString());
+      }
+      
       const res = await fetch(`${API_URL}/hexagram/${upper}/${lower}`);
       const data = await res.json();
+      
+      // Add life path info
+      data.life_path = lifePath;
+      data.life_path_meaning = {
+        1: "領導力、有主見",
+        2: "設計、策劃",
+        3: "聰明、智慧",
+        4: "健康、規律",
+        5: "財富、人群核心",
+        6: "愛心、耐心",
+        7: "貴人、專家",
+        8: "時尚、八面玲瓏",
+        9: "包容"
+      }[lifePath] || "Unknown";
+      
       setAdminHexagram(data);
     } catch (err) {
       alert("分析失敗");
@@ -344,6 +370,34 @@ export default function Home() {
           {/* Admin Phone Analysis */}
           <div className="bg-white p-6 rounded-lg mb-8">
             <h2 className="text-2xl font-bold mb-4">電話號碼分析</h2>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">出生年月日</label>
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="number"
+                  placeholder="年份"
+                  value={adminBirthYear}
+                  onChange={(e) => setAdminBirthYear(parseInt(e.target.value))}
+                  className="p-2 border rounded"
+                />
+                <input
+                  type="number"
+                  placeholder="月份"
+                  value={adminBirthMonth}
+                  onChange={(e) => setAdminBirthMonth(parseInt(e.target.value))}
+                  className="p-2 border rounded"
+                />
+                <input
+                  type="number"
+                  placeholder="日期"
+                  value={adminBirthDay}
+                  onChange={(e) => setAdminBirthDay(parseInt(e.target.value))}
+                  className="p-2 border rounded"
+                />
+              </div>
+            </div>
+            
             <div className="flex gap-2">
               <input
                 type="text"
@@ -363,6 +417,7 @@ export default function Home() {
               <div className="mt-4 bg-yellow-50 p-4 rounded-lg">
               <p className="text-2xl font-bold">{adminHexagram.upper_trigram.name}{adminHexagram.lower_trigram.name}</p>
               <p className="text-lg">{adminHexagram.hexagram_name}</p>
+              <p className="text-sm mt-2">生命密碼: {adminHexagram.life_path} - {adminHexagram.life_path_meaning}</p>
               </div>
             )}
           </div>
