@@ -61,6 +61,8 @@ export default function Home() {
   const [adminStats, setAdminStats] = useState<Stats | null>(null);
   const [allUsers, setAllUsers] = useState([]);
   const [allPhones, setAllPhones] = useState([]);
+  const [resetEmail, setResetEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   const calculateLifePath = (year: number, month: number, day: number): number => {
     const total = year + month + day;
@@ -247,6 +249,28 @@ export default function Home() {
     }
   };
 
+  const handleAdminResetPassword = async () => {
+    if (!resetEmail || !newPassword) return;
+    try {
+      const res = await fetch(`${API_URL}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: resetEmail, 
+          old_password: "cBp8uvF4YkkX",
+          new_password: newPassword 
+        }),
+      });
+      if (res.ok) {
+        alert("密碼已更新!");
+        setResetEmail("");
+        setNewPassword("");
+      }
+    } catch (err) {
+      alert("更新失敗");
+    }
+  };
+
   // Auto load admin data
   useEffect(() => {
     if (isAdmin && view === "admin") {
@@ -297,7 +321,34 @@ export default function Home() {
             </div>
           </div>
           
-          {/* Users Table */}
+          {/* Admin Reset Password */}
+          <div className="bg-white p-6 rounded-lg mb-8">
+            <h2 className="text-2xl font-bold mb-4">重設密碼</h2>
+            <form onSubmit={(e) => { e.preventDefault(); handleAdminResetPassword(); }} className="space-y-4">
+              <input
+                type="email"
+                placeholder="輸入用戶電郵"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <input
+                type="password"
+                placeholder="新密碼"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700"
+              >
+                重設密碼
+              </button>
+            </form>
+          </div>
           <div className="bg-white p-6 rounded-lg mb-8">
             <h2 className="text-2xl font-bold mb-4">用戶列表</h2>
             <table className="w-full">
