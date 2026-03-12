@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
@@ -35,12 +35,12 @@ const LIFE_PATH_MEANINGS: Record<number, string> = {
   5: "財富、人群核心",
   6: "愛心、耐心",
   7: "貴人、專家",
-  8: "時尚、八面玲瓏",
+  8: "時尚，八面玲瓏",
   9: "包容",
 };
 
 export default function Home() {
-  const [view, setView] = useState<"home" | "register" | "login" | "dashboard" | "admin">("home");
+  const [view, setView] = useState<"home" | "register" | "login" | "dashboard" | "admin" | "reset-password">("home");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -55,6 +55,7 @@ export default function Home() {
   const [recommendation, setRecommendation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   
   // Admin states
   const [adminStats, setAdminStats] = useState<Stats | null>(null);
@@ -137,6 +138,37 @@ export default function Home() {
     setLoading(false);
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    
+    const oldPassword = (e.target as any).oldPassword.value;
+    const newPassword = (e.target as any).newPassword.value;
+    
+    try {
+      const res = await fetch(`${API_URL}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email, 
+          old_password: oldPassword,
+          new_password: newPassword 
+        }),
+      });
+      
+      if (!res.ok) throw new Error("Reset failed");
+      
+      setSuccess("Password updated successfully!");
+      setTimeout(() => setView("login"), 2000);
+    } catch (err) {
+      setError("Failed to reset password.");
+    }
+    
+    setLoading(false);
+  };
+
   const analyzePhone = async () => {
     if (!phoneNumber || !user) return;
     setLoading(true);
@@ -152,6 +184,16 @@ export default function Home() {
       const res = await fetch(`${API_URL}/hexagram/${upper}/${lower}`);
       const data = await res.json();
       setHexagram(data);
+      
+      // Save to backend
+      await fetch(`${API_URL}/analyze-phone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          user_id: user.id
+        }),
+      });
     } catch (err) {
       setError("Analysis failed.");
     }
@@ -205,6 +247,16 @@ export default function Home() {
     }
   };
 
+  // Auto load admin data
+  useEffect(() => {
+    if (isAdmin && view === "admin") {
+      loadAdminStats();
+      loadAllUsers();
+      loadAllPhones();
+    }
+  }, [isAdmin, view]);
+
+  // Admin View
   if (isAdmin && view === "admin") {
     return (
       <main className="min-h-screen p-8 bg-gradient-to-b from-blue-50 to-white">
@@ -303,6 +355,7 @@ export default function Home() {
     );
   }
 
+  // Main UI
   return (
     <main className="min-h-screen p-8 bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-md mx-auto">
@@ -312,6 +365,12 @@ export default function Home() {
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {error}
+          </div>
+        )}
+        
+        {success && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            {success}
           </div>
         )}
         
@@ -407,8 +466,55 @@ export default function Home() {
         )}
         
         {view === "login" && (
-          <form onSubmit={handleLogin} className="space-y-4">
-            <h2 className="text-2xl font-bold mb-4">登入</h2>
+          <div className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <h2 className="text-2xl font-bold mb-4">登入</h2>
+              
+              <input
+                type="email"
+                placeholder="電郵"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              <input
+                type="password"
+                placeholder="密碼"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 border rounded-lg"
+                required
+              />
+              
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              >
+                {loading ? "處理中..." : "登入"}
+              </button>
+            </form>
+            
+            <button
+              onClick={() => setView("reset-password")}
+              className="w-full text-blue-600 py-2"
+            >
+              忘記密碼？
+            </button>
+            
+            <button
+              onClick={() => setView("home")}
+              className="w-full text-gray-600 py-2"
+            >
+              返回
+            </button>
+          </div>
+        )}
+        
+        {view === "reset-password" && (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <h2 className="text-2xl font-bold mb-4">重設密碼</h2>
             
             <input
               type="email"
@@ -419,10 +525,16 @@ export default function Home() {
               required
             />
             <input
+              name="oldPassword"
               type="password"
-              placeholder="密碼"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              placeholder="舊密碼"
+              className="w-full p-3 border rounded-lg"
+              required
+            />
+            <input
+              name="newPassword"
+              type="password"
+              placeholder="新密碼"
               className="w-full p-3 border rounded-lg"
               required
             />
@@ -432,12 +544,12 @@ export default function Home() {
               disabled={loading}
               className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? "處理中..." : "登入"}
+              {loading ? "處理中..." : "重設"}
             </button>
             
             <button
               type="button"
-              onClick={() => setView("home")}
+              onClick={() => setView("login")}
               className="w-full text-gray-600 py-2"
             >
               返回
@@ -476,7 +588,6 @@ export default function Home() {
                   <p className="text-2xl my-2">{hexagram.upper_trigram.name}{hexagram.lower_trigram.name}</p>
                   <p>{hexagram.hexagram_name}</p>
                   <p className="text-sm text-gray-600">{hexagram.judgment}</p>
-                  <p className="text-sm">{hexagram.keywords}</p>
                 </div>
               )}
             </div>
