@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 interface User {
   id: number;
   name: string;
+  email: string;
   life_path_number: number;
+  is_admin?: boolean;
 }
 
 interface Hexagram {
@@ -16,6 +18,13 @@ interface Hexagram {
   hexagram_name: string;
   judgment: string;
   keywords: string;
+}
+
+interface Stats {
+  total_users: number;
+  total_phone_numbers: number;
+  total_life_paths: number;
+  total_hexagrams: number;
 }
 
 const LIFE_PATH_MEANINGS: Record<number, string> = {
@@ -31,8 +40,7 @@ const LIFE_PATH_MEANINGS: Record<number, string> = {
 };
 
 export default function Home() {
-  // States
-  const [view, setView] = useState<"home" | "register" | "login" | "dashboard">("home");
+  const [view, setView] = useState<"home" | "register" | "login" | "dashboard" | "admin">("home");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
@@ -40,14 +48,19 @@ export default function Home() {
   const [birthMonth, setBirthMonth] = useState(1);
   const [birthDay, setBirthDay] = useState(1);
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [hexagram, setHexagram] = useState<Hexagram | null>(null);
   const [goalNumber, setGoalNumber] = useState(5);
   const [recommendation, setRecommendation] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Admin states
+  const [adminStats, setAdminStats] = useState<Stats | null>(null);
+  const [allUsers, setAllUsers] = useState([]);
+  const [allPhones, setAllPhones] = useState([]);
 
-  // Calculate Life Path
   const calculateLifePath = (year: number, month: number, day: number): number => {
     const total = year + month + day;
     while (total >= 10) {
@@ -61,7 +74,6 @@ export default function Home() {
     return total;
   };
 
-  // Handle Register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -95,7 +107,6 @@ export default function Home() {
     setLoading(false);
   };
 
-  // Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -114,9 +125,11 @@ export default function Home() {
       setUser({
         id: data.user_id,
         name: data.name,
+        email: email,
         life_path_number: data.life_path_number,
       });
-      setView("dashboard");
+      setIsAdmin(data.is_admin || false);
+      setView(data.is_admin ? "admin" : "dashboard");
     } catch (err) {
       setError("Invalid credentials.");
     }
@@ -124,14 +137,12 @@ export default function Home() {
     setLoading(false);
   };
 
-  // Analyze Phone
   const analyzePhone = async () => {
     if (!phoneNumber || !user) return;
     setLoading(true);
     setError("");
     
     try {
-      // Calculate hexagram
       const digits = phoneNumber.replace(/\D/g, "").split("").map(Number);
       const first4 = digits.slice(0, 4).reduce((a, b) => a + b, 0);
       const last4 = digits.slice(4, 8).reduce((a, b) => a + b, 0);
@@ -140,15 +151,14 @@ export default function Home() {
       
       const res = await fetch(`${API_URL}/hexagram/${upper}/${lower}`);
       const data = await res.json();
-      setHexagram(data);
-    } catch (err) {
+      set    } catch (Hexagram(data);
+err) {
       setError("Analysis failed.");
     }
     
     setLoading(false);
   };
 
-  // Get Recommendation
   const getRecommendation = async () => {
     if (!user) return;
     setLoading(true);
@@ -164,10 +174,138 @@ export default function Home() {
     setLoading(false);
   };
 
+  // Admin functions
+  const loadAdminStats = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/stats`);
+      const data = await res.json();
+      setAdminStats(data);
+    } catch (err) {
+      console.error("Failed to load stats");
+    }
+  };
+
+  const loadAllUsers = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/users`);
+      const data = await res.json();
+      setAllUsers(data.users);
+    } catch (err) {
+      console.error("Failed to load users");
+    }
+  };
+
+  const loadAllPhones = async () => {
+    try {
+      const res = await fetch(`${API_URL}/admin/phone-numbers`);
+      const data = await res.json();
+      setAllPhones(data.phone_numbers);
+    } catch (err) {
+      console.error("Failed to load phones");
+    }
+  };
+
+  if (isAdmin && view === "admin") {
+    return (
+      <main className="min-h-screen p-8 bg-gradient-to-b from-blue-50 to-white">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold">🧘 MobileQ Admin 後台</h1>
+            <button
+              onClick={() => { setUser(null); setIsAdmin(false); setView("home"); }}
+              className="bg-red-500 text-white px-4 py-2 rounded"
+            >
+              登出
+            </button>
+          </div>
+          
+          {/* Stats Cards */}
+          <div className="grid grid-cols-4 gap-4 mb-8">
+            <button 
+              onClick={() => { loadAdminStats(); loadAllUsers(); }}
+              className="bg-blue-500 text-white p-6 rounded-lg text-center"
+            >
+              <div className="text-3xl font-bold">{adminStats?.total_users || "-"}</div>
+              <div>總用戶</div>
+            </button>
+            <button 
+              onClick={() => { loadAdminStats(); loadAllPhones(); }}
+              className="bg-green-500 text-white p-6 rounded-lg text-center"
+            >
+              <div className="text-3xl font-bold">{adminStats?.total_phone_numbers || "-"}</div>
+              <div>總號碼</div>
+            </button>
+            <div className="bg-purple-500 text-white p-6 rounded-lg text-center">
+              <div className="text-3xl font-bold">{adminStats?.total_life_paths || "-"}</div>
+              <div>生命密碼</div>
+            </div>
+            <div className="bg-yellow-500 text-white p-6 rounded-lg text-center">
+              <div className="text-3xl font-bold">{adminStats?.total_hexagrams || "-"}</div>
+              <div>卦象</div>
+            </div>
+          </div>
+          
+          {/* Users Table */}
+          <div className="bg-white p-6 rounded-lg mb-8">
+            <h2 className="text-2xl font-bold mb-4">用戶列表</h2>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 text-left">ID</th>
+                  <th className="p-2 text-left">Name</th>
+                  <th className="p-2 text-left">Email</th>
+                  <th className="p-2 text-left">生命密碼</th>
+                  <th className="p-2 text-left">註冊日期</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allUsers.map((u: any) => (
+                  <tr key={u.id} className="border-b">
+                    <td className="p-2">{u.id}</td>
+                    <td className="p-2">{u.name}</td>
+                    <td className="p-2">{u.email}</td>
+                    <td className="p-2">{u.life_path_number}</td>
+                    <td className="p-2">{new Date(u.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Phone Numbers Table */}
+          <div className="bg-white p-6 rounded-lg">
+            <h2 className="text-2xl font-bold mb-4">電話號碼列表</h2>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 text-left">ID</th>
+                  <th className="p-2 text-left">號碼</th>
+                  <th className="p-2 text-left">用戶</th>
+                  <th className="p-2 text-left">Email</th>
+                  <th className="p-2 text-left">日期</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allPhones.map((p: any) => (
+                  <tr key={p.id} className="border-b">
+                    <td className="p-2">{p.id}</td>
+                    <td className="p-2">{p.phone_number}</td>
+                    <td className="p-2">{p.name}</td>
+                    <td className="p-2">{p.email}</td>
+                    <td className="p-2">{new Date(p.created_at).toLocaleDateString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen p-8 bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-md mx-auto">
-        {/* Header */}
         <h1 className="text-4xl font-bold text-center mb-2">🧘 MobileQ 卦號</h1>
         <p className="text-center text-gray-600 mb-8">電話號碼運勢分析系統</p>
         
@@ -177,7 +315,6 @@ export default function Home() {
           </div>
         )}
         
-        {/* Home View */}
         {view === "home" && (
           <div className="space-y-4">
             <button
@@ -195,7 +332,6 @@ export default function Home() {
           </div>
         )}
         
-        {/* Register View */}
         {view === "register" && (
           <form onSubmit={handleRegister} className="space-y-4">
             <h2 className="text-2xl font-bold mb-4">用戶登記</h2>
@@ -270,7 +406,6 @@ export default function Home() {
           </form>
         )}
         
-        {/* Login View */}
         {view === "login" && (
           <form onSubmit={handleLogin} className="space-y-4">
             <h2 className="text-2xl font-bold mb-4">登入</h2>
@@ -310,7 +445,6 @@ export default function Home() {
           </form>
         )}
         
-        {/* Dashboard View */}
         {view === "dashboard" && user && (
           <div className="space-y-6">
             <div className="bg-blue-100 p-4 rounded-lg">
@@ -319,7 +453,6 @@ export default function Home() {
               <p className="text-sm text-gray-600">{LIFE_PATH_MEANINGS[user.life_path_number]}</p>
             </div>
             
-            {/* Phone Analysis */}
             <div className="border p-4 rounded-lg">
               <h3 className="text-xl font-bold mb-4">電話號碼分析</h3>
               <input
@@ -348,7 +481,6 @@ export default function Home() {
               )}
             </div>
             
-            {/* Recommendation */}
             <div className="border p-4 rounded-lg">
               <h3 className="text-xl font-bold mb-4">號碼推薦</h3>
               
