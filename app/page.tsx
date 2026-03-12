@@ -511,7 +511,7 @@ export default function Home() {
   return (
     <main className="min-h-screen p-8 bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-md mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-2">🧘 MobileQ 卦號</h1>
+        <h1 className="text-4xl font-bold text-center mb-2">🧘 MobileQ 卦號 v2</h1>
         <p className="text-center text-gray-600 mb-8">電話號碼運勢分析系統</p>
         
         {error && (
